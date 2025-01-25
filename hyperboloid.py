@@ -101,9 +101,9 @@ def random_riemannian_gaussian(base = None, n_samples = 1, sigma = 1):
 
     base = base.reshape(1, -1)
 
-    dim_embedded = base.shape[-1]
+    dim = base.shape[-1] - 1
 
-    directions = np.random.randn(n_samples, dim_embedded)
+    directions = np.random.randn(n_samples, base.shape[-1])
 
     directions_tangent = directions + minkowski_dot(base, directions)[..., np.newaxis] * base
 
@@ -112,11 +112,10 @@ def random_riemannian_gaussian(base = None, n_samples = 1, sigma = 1):
     directions_tangent = directions_tangent / directions_tangent_norm[..., np.newaxis]
 
     # generate random radius from a distribution proportional to e^{-r^2/2\sigma^2} * \sinh^{dim_intrinsic-1}(r), where dim_intrinsic = dim_embedded - 1
-
-    # use np.vectorize to vectorize the functions
     
     random_U = np.random.rand(n_samples)
 
+    """
     def integral(x, u):
 
         return quad(lambda t: np.exp(- np.arcsinh(t) ** 2 / (2 * sigma)) * t ** (dim_embedded - 2) * np.sqrt(1 + t ** 2), 0, x)[0] - u
@@ -124,6 +123,21 @@ def random_riemannian_gaussian(base = None, n_samples = 1, sigma = 1):
     roots = np.array([root_scalar(integral, args = (u,), bracket = [0, 10]).root for u in random_U])
 
     vectors = directions_tangent * np.arcsinh(roots)[..., np.newaxis]
+    """
+
+    f = lambda t : np.exp(- np.tan(t) ** 2 / (2 * sigma ** 2)) * np.sinh(np.tan(t)) ** (dim - 1) / np.cos(t) ** 2
+
+    c = quad(f, 0, np.pi/2)[0]
+
+    def res(t, u):
+        return quad(f, 0, t)[0] - u * c
+    
+    def find(u):
+        return root_scalar(res, bracket = [0, np.pi/2], args = (u,)).root
+    
+    t = np.vectorize(find)(random_U)
+
+    vectors = directions_tangent * np.tan(t)[..., np.newaxis]
 
     return exp(base, vectors)
 

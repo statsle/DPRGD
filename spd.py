@@ -9,8 +9,6 @@ import numpy as np
 
 from scipy.linalg import expm, logm
 
-# the tangent space is the space of symmetric matrices
-
 # ---------------------- check dimension ---------------------- #
 
 def check_dim(base, vector):
@@ -35,31 +33,24 @@ def check_dim(base, vector):
 
     return base, vector
 
-# ---------------------- Symmetric positive definite space ---------------------- #
+# ---------------------- Symmetric positive definite matrices ---------------------- #
 
-def dist(base, target, epsilon = 1e-10):
+def dist(base, points):
 
-    # input case 1 : 2D base and 3D vector
+    if base.shape == points.shape:
+        pass
+    elif base.shape == points.shape[1:]:
+        base = np.tile(base, (points.shape[0],) + (1,) * base.ndim)
+    else:
+        raise ValueError("The shape of base and points should be the same or the same except the first dimension")
 
-    # input case 2 : 3D base and 3D vector
+    vals, vecs = np.linalg.eigh(base)
 
-    base, target = check_dim(base, target)
+    base_sqrt_inv = np.einsum("...ij,...j,...kj->...ik", vecs, 1 / np.sqrt(vals), vecs)
+    inner = np.einsum("...ij,...jk,...kl->...il", base_sqrt_inv, points, base_sqrt_inv)
 
-    #eigvals, eigvecs = np.linalg.eigh(base)
-
-    #eigvals = np.maximum(eigvals, epsilon)
-
-    #base_sqrt_inv = np.einsum('nij,nj,nkj->nik', eigvecs, 1 / np.sqrt(eigvals), eigvecs)
-
-    #inner_log = np.einsum('nij,njk,nkl->nil', base_sqrt_inv, target, base_sqrt_inv)
-
-    inv_base = np.linalg.pinv(base)
-
-    inner_log = np.einsum('nij,njk->nik', inv_base, target)
-
-    log_inner = np.array([logm(m) for m in inner_log])
-
-    return np.linalg.norm(log_inner, axis = (1, 2))
+    inner_vals, _ = np.linalg.eigh(inner)
+    return np.linalg.norm(np.log(inner_vals), axis = -1)
 
 def exp(base, vector, epsilon = 1e-10):
 
