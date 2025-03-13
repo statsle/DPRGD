@@ -1,0 +1,33 @@
+# zip files
+*.zip
+
+# csv files
+*.csv
+
+# npy files
+*.npy
+
+# cache files
+__pycache__/
+*.py[cod]
+*$PYTHONHASHSEED
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# virtual environment
+venv/
+env/
+*.venv/
+
+# logs
+logs/
+*.log
+
+# compiled output
+*.so
+*.o
+*.a
+*.out
+*.exe
+*.pyc
